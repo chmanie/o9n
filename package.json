@@ -1,0 +1,22 @@
+{
+  "name": "sceen",
+  "version": "1.0.0",
+  "description": "Quickly get screen resolution, browser size and other helpful screen information",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape"
+  },
+  "keywords": [
+    "screen",
+    "resolution",
+    "retina",
+    "size"
+  ],
+  "author": "Christian Maniewski <chmanie@fastmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "karma": "^0.13.10",
+    "karma-browserify": "^4.4.0",
+    "tape": "^4.2.1"
+  }
+}
