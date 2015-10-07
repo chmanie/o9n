@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node_modules/.bin/karma start",
-    "build": "mkdir -p ./dist && node_modules/.bin/browserify ./index.js -s o9n -o ./dist/index.js"
+    "build": "mkdir -p ./dist && node_modules/.bin/browserify ./index.js -s o9n -o ./dist/o9n.js"
   },
   "testling": {
     "browsers": [
@@ -33,5 +33,6 @@
   },
   "dependencies": {
     "a-promise": "^1.0.0"
-  }
+  },
+  "repository": "https://github.com/chmanie/o9n.git"
 }
