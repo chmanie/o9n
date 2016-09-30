@@ -1,7 +1,7 @@
 # o9n (orientation)
 a screen.orientation ponyfill
 
-This is a [ponyfill](http://ponyfoo.com/articles/polyfills-or-ponyfills) for the new, currently in-draft [screen.orientation API](https://w3c.github.io/screen-orientation/#widl-ScreenOrientation-lock-Promise-void--OrientationLockType-orientation).
+This is a [ponyfill](https://ponyfill.com) for the new, currently in-draft [screen.orientation API](https://w3c.github.io/screen-orientation/#widl-ScreenOrientation-lock-Promise-void--OrientationLockType-orientation).
 
 ## Installation
 
