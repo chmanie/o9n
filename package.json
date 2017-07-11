@@ -27,6 +27,7 @@
     "karma-browserify": "^4.4.0",
     "karma-chrome-launcher": "^2.2.0",
     "karma-firefox-launcher": "^1.0.1",
+    "karma-phantomjs-launcher": "^1.0.4",
     "karma-safari-launcher": "^1.0.0",
     "karma-tap": "^1.0.3",
     "karma-tape-reporter": "^1.0.3",
