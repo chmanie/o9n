@@ -1,7 +1,7 @@
 {
   "name": "o9n",
-  "version": "1.0.0",
-  "description": "A screen.orientation ponyfill",
+  "version": "2.0.0",
+  "description": "A screen.orientation ponyfill 🖥",
   "main": "index.js",
   "scripts": {
     "test": "node_modules/.bin/karma start",
