@@ -25,14 +25,14 @@
     "browserify": "^11.2.0",
     "karma": "^0.13.10",
     "karma-browserify": "^4.4.0",
-    "karma-phantomjs-launcher": "^0.2.1",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-firefox-launcher": "^1.0.1",
+    "karma-safari-launcher": "^1.0.0",
     "karma-tap": "^1.0.3",
     "karma-tape-reporter": "^1.0.3",
     "phantomjs": "^1.9.18",
     "tape": "^4.2.1"
   },
-  "dependencies": {
-    "a-promise": "^1.0.0"
-  },
+  "dependencies": {},
   "repository": "https://github.com/chmanie/o9n.git"
 }

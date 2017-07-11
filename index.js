@@ -5,8 +5,7 @@ if (typeof window != 'object') {
 }
 
 var screen = window.screen;
-
-var Promise = window.Promise || require('a-promise');
+var Promise = window.Promise;
 
 var orientation;
 
@@ -34,7 +33,6 @@ module.exports = {
 };
 
 function createOrientation () {
-
   var orientationMap = {
     '90': 'landscape-primary',
     '-90': 'landscape-secondary',
@@ -44,21 +42,22 @@ function createOrientation () {
 
   var found = findDelegate();
 
-  var or = Object.create({
-    addEventListener: delegate('addEventListener', found.delegate, found.event),
-    dispatchEvent: delegate('dispatchEvent', found.delegate, found.event),
-    removeEventListener: delegate('removeEventListener', found.delegate, found.event),
-    lock: getLock(),
-    unlock: getUnlock()
-  });
+  function ScreenOrientation() {}
+  ScreenOrientation.prototype.addEventListener = delegate('addEventListener', found.delegate, found.event);
+  ScreenOrientation.prototype.dispatchEvent = delegate('dispatchEvent', found.delegate, found.event);
+  ScreenOrientation.prototype.removeEventListener = delegate('removeEventListener', found.delegate, found.event);
+  ScreenOrientation.prototype.lock = getLock();
+  ScreenOrientation.prototype.unlock = getUnlock();
+
+  var or = new ScreenOrientation();
 
   Object.defineProperties(or, {
     onchange: {
       get: function () {
-        return found.delegate['on' + found.event];
+        return found.delegate['on' + found.event] || null;
       },
       set: function (cb) {
-        found.delegate['on' + found.event] = cb;
+        found.delegate['on' + found.event] = wrapCallback(cb);
       }
     },
     type: {
@@ -74,30 +73,74 @@ function createOrientation () {
   });
 
   return or;
-
 }
 
-
-function delegate (name, fn, event) {
-  return function () {
+function delegate (fnName, delegateContext, eventName) {
+  return function delegated () {
     var args = Array.prototype.slice.call(arguments);
     var actualEvent = args[0].type ? args[0].type : args[0];
     if (actualEvent !== 'change') {
       return;
     }
     if (args[0].type) {
-      args[0] = getOrientationChangeEvent(event, args[0]);
+      args[0] = getOrientationChangeEvent(eventName, args[0]);
     } else {
-      args[0] = event;
+      args[0] = eventName;
     }
-    return fn[name].apply(fn, args);
+    var wrapped = wrapCallback(args[1]);
+    if (fnName === 'addEventListener') {
+      addTrackedListener(args[1], wrapped);
+    }
+    if (fnName === 'removeEventListener') {
+      removeTrackedListener(args[1]);
+    }
+    args[1] = wrapped;
+    return delegateContext[fnName].apply(delegateContext, args);
+  };
+}
+
+var trackedListeners = [];
+var originalListeners = [];
+
+function addTrackedListener(original, wrapped) {
+  var idx = originalListeners.indexOf(original);
+  if (idx > -1) {
+    trackedListeners[idx] = wrapped;
+  } else {
+    originalListeners.push(original);
+    trackedListeners.push(wrapped);
+  }
+}
+
+function removeTrackedListener(original) {
+  var idx2 = originalListeners.indexOf(original);
+  if (idx2 > -1) {
+    originalListeners.splice(idx2, 1);
+    trackedListeners.splice(idx2, 1);
+  }
+}
+
+function wrapCallback(cb) {
+  var idx = originalListeners.indexOf(cb);
+  if (idx > -1) {
+    return trackedListeners[idx];
+  }
+  return function wrapped (evt) {
+    if (evt.target !== orientation) {
+      defineValue(evt, 'target', orientation);
+    }
+    if (evt.currentTarget !== orientation) {
+      defineValue(evt, 'currentTarget', orientation);
+    }
+    if (evt.type !== 'change') {
+      defineValue(evt, 'type', 'change');
+    }
+    cb(evt);
   };
 }
 
 function getLock () {
-
   var err = 'lockOrientation() is not available on this device.';
-
   var delegateFn;
   if (typeof screen.msLockOrientation == 'function') {
     delegateFn = screen.msLockOrientation.bind(screen);
@@ -108,7 +151,6 @@ function getLock () {
   }
 
   return function lock(lockType) {
-
     if (delegateFn(lockType)) {
       return Promise.resolve(lockType);
     } else {
@@ -136,7 +178,7 @@ function findDelegate () {
     }
   }
 
-  if (window.onorientationchange === null) {
+  if (typeof window.onorientationchange != 'undefined') {
     return {
       delegate: window,
       event: 'orientationchange'
@@ -144,10 +186,9 @@ function findDelegate () {
   }
 
   return {
-    delegate: ownDelegate(),
+    delegate: createOwnDelegate(),
     event: 'change'
   };
-
 }
 
 function getOrientationChangeEvent (name, props) {
@@ -161,14 +202,15 @@ function getOrientationChangeEvent (name, props) {
   return orientationChangeEvt;
 }
 
-function ownDelegate () {
-
-  var or = Object.create({
+function createOwnDelegate () {
+  var ownDelegate = Object.create({
     addEventListener: function addEventListener (evt, cb) {
       if (!this.listeners[evt]) {
         this.listeners[evt] = [];
       }
-      this.listeners[evt].push(cb);
+      if (this.listeners[evt].indexOf(cb) === -1) {
+        this.listeners[evt].push(cb);
+      }
     },
     dispatchEvent: function dispatchEvent (evt) {
       if (!this.listeners[evt.type]) {
@@ -177,8 +219,8 @@ function ownDelegate () {
       this.listeners[evt.type].forEach(function (fn) {
         fn(evt);
       });
-      if (typeof this.onchange == 'function') {
-        this.onchange(evt);
+      if (typeof orientation.onchange == 'function') {
+        orientation.onchange(evt);
       }
     },
     removeEventListener: function removeEventListener (evt, cb) {
@@ -192,19 +234,17 @@ function ownDelegate () {
     }
   });
 
-  or.listeners = {};
-  or.onchange = null;
+  ownDelegate.listeners = {};
 
   var mql = getMql();
 
   if (mql && typeof mql.matches === 'boolean') {
     mql.addListener(function() {
-      or.dispatchEvent({ type: 'change' });
+      ownDelegate.dispatchEvent(getOrientationChangeEvent('change'));
     });
   }
 
-  return or;
-
+  return ownDelegate;
 }
 
 function getMql () {
@@ -212,4 +252,10 @@ function getMql () {
     return {};
   }
   return window.matchMedia('(orientation: landscape)');
+}
+
+function defineValue(obj, key, val) {
+  Object.defineProperty(obj, key, {
+    value: val
+  });
 }
