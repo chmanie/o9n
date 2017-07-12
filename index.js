@@ -113,10 +113,10 @@ function addTrackedListener(original, wrapped) {
 }
 
 function removeTrackedListener(original) {
-  var idx2 = originalListeners.indexOf(original);
-  if (idx2 > -1) {
-    originalListeners.splice(idx2, 1);
-    trackedListeners.splice(idx2, 1);
+  var idx = originalListeners.indexOf(original);
+  if (idx > -1) {
+    originalListeners.splice(idx, 1);
+    trackedListeners.splice(idx, 1);
   }
 }
 
