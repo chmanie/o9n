@@ -27,6 +27,15 @@ or build it and include the file in a `<script>`-tag:
 
 It will be available in `window.o9n`.
 
+### SSR Usage
+
+If you're in an environment where `window` may be undefined like during an SSR, you're able to call the included `getOrientation` method when `window` _is_ defined in order to get the same `orientation` object
+
+```javascript
+var getOrientation = require('o9n').getOrientation;
+var orientation = getOrientation();
+```
+
 ## Supported browsers
 
 It **should** work in these browsers although I couldn't test them all manually (or automatically).

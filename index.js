@@ -1,28 +1,31 @@
 'use strict';
 
-if (typeof window != 'object') {
-  throw new Error('Oh no! o9n needs to run in a browser');
-}
+function getOrientation() {
+  if (!window) return undefined;
+  var screen = window.screen;
+  var orientation;
 
-var screen = window.screen;
-var Promise = window.Promise;
+  // W3C spec implementation
+  if (
+    typeof window.ScreenOrientation === 'function' &&
+    screen.orientation instanceof ScreenOrientation &&
+    typeof screen.orientation.addEventListener == 'function' &&
+    screen.orientation.onchange === null &&
+    typeof screen.orientation.type === 'string'
+  ) {
+    orientation = screen.orientation;
+  } else {
+    orientation = createOrientation();
+  }
 
-var orientation;
-
-// W3C spec implementation
-if (typeof window.ScreenOrientation === 'function' &&
-  screen.orientation instanceof ScreenOrientation &&
-  typeof screen.orientation.addEventListener == 'function' &&
-  screen.orientation.onchange === null &&
-  typeof screen.orientation.type === 'string') {
-  orientation = screen.orientation;
-} else {
-  orientation = createOrientation();
+  return orientation;
 }
 
 module.exports = {
-  orientation: orientation,
+  orientation: getOrientation(),
+  getOrientation: getOrientation,
   install: function install () {
+    var screen = window.screen;
     if (typeof window.ScreenOrientation === 'function' &&
       screen.orientation instanceof ScreenOrientation) {
       return screen.orientation;
@@ -40,16 +43,17 @@ function createOrientation () {
     '180': 'portrait-secondary'
   };
 
-  var found = findDelegate();
-
   function ScreenOrientation() {}
+  var or = new ScreenOrientation();
+
+  var found = findDelegate(or);
+
   ScreenOrientation.prototype.addEventListener = delegate('addEventListener', found.delegate, found.event);
   ScreenOrientation.prototype.dispatchEvent = delegate('dispatchEvent', found.delegate, found.event);
   ScreenOrientation.prototype.removeEventListener = delegate('removeEventListener', found.delegate, found.event);
   ScreenOrientation.prototype.lock = getLock();
   ScreenOrientation.prototype.unlock = getUnlock();
 
-  var or = new ScreenOrientation();
 
   Object.defineProperties(or, {
     onchange: {
@@ -57,11 +61,12 @@ function createOrientation () {
         return found.delegate['on' + found.event] || null;
       },
       set: function (cb) {
-        found.delegate['on' + found.event] = wrapCallback(cb);
+        found.delegate['on' + found.event] = wrapCallback(cb, or);
       }
     },
     type: {
       get: function () {
+        var screen = window.screen;
         return screen.msOrientation || screen.mozOrientation ||
           orientationMap[window.orientation + ''] ||
           (getMql().matches ? 'landscape-primary' : 'portrait-primary');
@@ -76,6 +81,7 @@ function createOrientation () {
 }
 
 function delegate (fnName, delegateContext, eventName) {
+  var that = this;
   return function delegated () {
     var args = Array.prototype.slice.call(arguments);
     var actualEvent = args[0].type ? args[0].type : args[0];
@@ -87,7 +93,7 @@ function delegate (fnName, delegateContext, eventName) {
     } else {
       args[0] = eventName;
     }
-    var wrapped = wrapCallback(args[1]);
+    var wrapped = wrapCallback(args[1], that);
     if (fnName === 'addEventListener') {
       addTrackedListener(args[1], wrapped);
     }
@@ -120,7 +126,7 @@ function removeTrackedListener(original) {
   }
 }
 
-function wrapCallback(cb) {
+function wrapCallback(cb, orientation) {
   var idx = originalListeners.indexOf(cb);
   if (idx > -1) {
     return trackedListeners[idx];
@@ -142,6 +148,7 @@ function wrapCallback(cb) {
 function getLock () {
   var err = 'lockOrientation() is not available on this device.';
   var delegateFn;
+  var screen = window.screen;
   if (typeof screen.msLockOrientation == 'function') {
     delegateFn = screen.msLockOrientation.bind(screen);
   } else if (typeof screen.mozLockOrientation == 'function') {
@@ -151,6 +158,7 @@ function getLock () {
   }
 
   return function lock(lockType) {
+    const Promise = window.Promise;
     if (delegateFn(lockType)) {
       return Promise.resolve(lockType);
     } else {
@@ -160,13 +168,14 @@ function getLock () {
 }
 
 function getUnlock () {
+  var screen = window.screen;
   return screen.orientation && screen.orientation.unlock.bind(screen.orientation) ||
     screen.msUnlockOrientation && screen.msUnlockOrientation.bind(screen) ||
     screen.mozUnlockOrientation && screen.mozUnlockOrientation.bind(screen) ||
     function unlock () { return; };
 }
 
-function findDelegate () {
+function findDelegate (orientation) {
   var events = ['orientationchange', 'mozorientationchange', 'msorientationchange'];
 
   for (var i = 0; i < events.length; i++) {
@@ -186,7 +195,7 @@ function findDelegate () {
   }
 
   return {
-    delegate: createOwnDelegate(),
+    delegate: createOwnDelegate(orientation),
     event: 'change'
   };
 }
@@ -202,9 +211,9 @@ function getOrientationChangeEvent (name, props) {
   return orientationChangeEvt;
 }
 
-function createOwnDelegate () {
+function createOwnDelegate(orientation) {
   var ownDelegate = Object.create({
-    addEventListener: function addEventListener (evt, cb) {
+    addEventListener: function addEventListener(evt, cb) {
       if (!this.listeners[evt]) {
         this.listeners[evt] = [];
       }
@@ -212,18 +221,18 @@ function createOwnDelegate () {
         this.listeners[evt].push(cb);
       }
     },
-    dispatchEvent: function dispatchEvent (evt) {
+    dispatchEvent: function dispatchEvent(evt) {
       if (!this.listeners[evt.type]) {
         return;
       }
-      this.listeners[evt.type].forEach(function (fn) {
+      this.listeners[evt.type].forEach(function(fn) {
         fn(evt);
       });
       if (typeof orientation.onchange == 'function') {
         orientation.onchange(evt);
       }
     },
-    removeEventListener: function removeEventListener (evt, cb) {
+    removeEventListener: function removeEventListener(evt, cb) {
       if (!this.listeners[evt]) {
         return;
       }
@@ -231,7 +240,7 @@ function createOwnDelegate () {
       if (idx > -1) {
         this.listeners[evt].splice(idx, 1);
       }
-    }
+    },
   });
 
   ownDelegate.listeners = {};
