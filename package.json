@@ -42,14 +42,14 @@
   },
   "dependencies": {},
   "repository": "https://github.com/chmanie/o9n.git",
-	"husky": {
-		"hooks": {
-			"pre-commit": "lint-staged"
-		}
-	},
-	"lint-staged": {
-		"*.{js}": [
-			"npm run format"
-		]
-	}
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js}": [
+      "eslint --fix"
+    ]
+  }
 }
