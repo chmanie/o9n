@@ -24,23 +24,25 @@ function getOrientation() {
 module.exports = {
   orientation: getOrientation(),
   getOrientation: getOrientation,
-  install: function install () {
+  install: function install() {
     var screen = window.screen;
-    if (typeof window.ScreenOrientation === 'function' &&
-      screen.orientation instanceof ScreenOrientation) {
+    if (
+      typeof window.ScreenOrientation === 'function' &&
+      screen.orientation instanceof ScreenOrientation
+    ) {
       return screen.orientation;
     }
     window.screen.orientation = orientation;
     return orientation;
-  }
+  },
 };
 
-function createOrientation () {
+function createOrientation() {
   var orientationMap = {
     '90': 'landscape-primary',
     '-90': 'landscape-secondary',
     '0': 'portrait-primary',
-    '180': 'portrait-secondary'
+    '180': 'portrait-secondary',
   };
 
   function ScreenOrientation() {}
@@ -48,12 +50,23 @@ function createOrientation () {
 
   var found = findDelegate(or);
 
-  ScreenOrientation.prototype.addEventListener = delegate('addEventListener', found.delegate, found.event);
-  ScreenOrientation.prototype.dispatchEvent = delegate('dispatchEvent', found.delegate, found.event);
-  ScreenOrientation.prototype.removeEventListener = delegate('removeEventListener', found.delegate, found.event);
+  ScreenOrientation.prototype.addEventListener = delegate(
+    'addEventListener',
+    found.delegate,
+    found.event
+  );
+  ScreenOrientation.prototype.dispatchEvent = delegate(
+    'dispatchEvent',
+    found.delegate,
+    found.event
+  );
+  ScreenOrientation.prototype.removeEventListener = delegate(
+    'removeEventListener',
+    found.delegate,
+    found.event
+  );
   ScreenOrientation.prototype.lock = getLock();
   ScreenOrientation.prototype.unlock = getUnlock();
-
 
   Object.defineProperties(or, {
     onchange: {
@@ -62,27 +75,30 @@ function createOrientation () {
       },
       set: function (cb) {
         found.delegate['on' + found.event] = wrapCallback(cb, or);
-      }
+      },
     },
     type: {
       get: function () {
         var screen = window.screen;
-        return screen.msOrientation || screen.mozOrientation ||
+        return (
+          screen.msOrientation ||
+          screen.mozOrientation ||
           orientationMap[window.orientation + ''] ||
-          (getMql().matches ? 'landscape-primary' : 'portrait-primary');
-      }
+          (getMql().matches ? 'landscape-primary' : 'portrait-primary')
+        );
+      },
     },
     angle: {
-      value: 0
-    }
+      value: 0,
+    },
   });
 
   return or;
 }
 
-function delegate (fnName, delegateContext, eventName) {
+function delegate(fnName, delegateContext, eventName) {
   var that = this;
-  return function delegated () {
+  return function delegated() {
     var args = Array.prototype.slice.call(arguments);
     var actualEvent = args[0].type ? args[0].type : args[0];
     if (actualEvent !== 'change') {
@@ -131,7 +147,7 @@ function wrapCallback(cb, orientation) {
   if (idx > -1) {
     return trackedListeners[idx];
   }
-  return function wrapped (evt) {
+  return function wrapped(evt) {
     if (evt.target !== orientation) {
       defineValue(evt, 'target', orientation);
     }
@@ -145,7 +161,7 @@ function wrapCallback(cb, orientation) {
   };
 }
 
-function getLock () {
+function getLock() {
   var err = 'lockOrientation() is not available on this device.';
   var delegateFn;
   var screen = window.screen;
@@ -154,11 +170,13 @@ function getLock () {
   } else if (typeof screen.mozLockOrientation == 'function') {
     delegateFn = screen.mozLockOrientation.bind(screen);
   } else {
-    delegateFn = function () { return false; };
+    delegateFn = function () {
+      return false;
+    };
   }
 
   return function lock(lockType) {
-    const Promise = window.Promise;
+    var Promise = window.Promise;
     if (delegateFn(lockType)) {
       return Promise.resolve(lockType);
     } else {
@@ -167,22 +185,31 @@ function getLock () {
   };
 }
 
-function getUnlock () {
+function getUnlock() {
   var screen = window.screen;
-  return screen.orientation && screen.orientation.unlock.bind(screen.orientation) ||
-    screen.msUnlockOrientation && screen.msUnlockOrientation.bind(screen) ||
-    screen.mozUnlockOrientation && screen.mozUnlockOrientation.bind(screen) ||
-    function unlock () { return; };
+  return (
+    (screen.orientation &&
+      screen.orientation.unlock.bind(screen.orientation)) ||
+    (screen.msUnlockOrientation && screen.msUnlockOrientation.bind(screen)) ||
+    (screen.mozUnlockOrientation && screen.mozUnlockOrientation.bind(screen)) ||
+    function unlock() {
+      return;
+    }
+  );
 }
 
-function findDelegate (orientation) {
-  var events = ['orientationchange', 'mozorientationchange', 'msorientationchange'];
+function findDelegate(orientation) {
+  var events = [
+    'orientationchange',
+    'mozorientationchange',
+    'msorientationchange',
+  ];
 
   for (var i = 0; i < events.length; i++) {
     if (screen['on' + events[i]] === null) {
       return {
         delegate: screen,
-        event: events[i]
+        event: events[i],
       };
     }
   }
@@ -190,17 +217,17 @@ function findDelegate (orientation) {
   if (typeof window.onorientationchange != 'undefined') {
     return {
       delegate: window,
-      event: 'orientationchange'
+      event: 'orientationchange',
     };
   }
 
   return {
     delegate: createOwnDelegate(orientation),
-    event: 'change'
+    event: 'change',
   };
 }
 
-function getOrientationChangeEvent (name, props) {
+function getOrientationChangeEvent(name, props) {
   var orientationChangeEvt;
 
   try {
@@ -225,7 +252,7 @@ function createOwnDelegate(orientation) {
       if (!this.listeners[evt.type]) {
         return;
       }
-      this.listeners[evt.type].forEach(function(fn) {
+      this.listeners[evt.type].forEach(function (fn) {
         fn(evt);
       });
       if (typeof orientation.onchange == 'function') {
@@ -248,7 +275,7 @@ function createOwnDelegate(orientation) {
   var mql = getMql();
 
   if (mql && typeof mql.matches === 'boolean') {
-    mql.addListener(function() {
+    mql.addListener(function () {
       ownDelegate.dispatchEvent(getOrientationChangeEvent('change'));
     });
   }
@@ -256,7 +283,7 @@ function createOwnDelegate(orientation) {
   return ownDelegate;
 }
 
-function getMql () {
+function getMql() {
   if (typeof window.matchMedia != 'function') {
     return {};
   }
@@ -265,6 +292,6 @@ function getMql () {
 
 function defineValue(obj, key, val) {
   Object.defineProperty(obj, key, {
-    value: val
+    value: val,
   });
 }
