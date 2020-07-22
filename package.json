@@ -6,8 +6,8 @@
   "scripts": {
     "test": "npm run lint && karma start",
     "build": "mkdir -p ./dist && browserify ./index.js -s o9n -o ./dist/o9n.js",
-    "lint": "eslint ./**/*.js",
-    "format": "eslint --fix ./**/*.js"
+    "lint": "eslint './**/*.js'",
+    "format": "eslint --fix './**/*.js'"
   },
   "testling": {
     "browsers": [
