@@ -1,7 +1,7 @@
 'use strict';
 
 function getOrientation() {
-  if (!window) return undefined;
+  if (typeof window === 'undefined') return undefined;
   var screen = window.screen;
   var orientation;
 
