@@ -1,6 +1,6 @@
 {
   "name": "o9n",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "A screen.orientation ponyfill 🖥",
   "main": "index.js",
   "scripts": {
