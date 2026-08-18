@@ -32,6 +32,7 @@ module.exports = {
     ) {
       return screen.orientation;
     }
+    var orientation = getOrientation();
     window.screen.orientation = orientation;
     return orientation;
   },
